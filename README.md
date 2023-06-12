@@ -5,10 +5,6 @@ Retrieve data from the website https://www.gismeteo.com/weather-timisoara-3370/m
 
 ![image](https://github.com/DanMelinte/WeatherApp/assets/44269060/5b687983-bed4-49fc-84b8-a094dbba7e3b)
 
-
-![image](https://github.com/DanMelinte/WeatherApp/assets/44269060/8259d45a-a47f-4853-8336-56e1cf08250e)
-
-
 ```java
 
 1. Watch temperature in a specific day : 
@@ -24,6 +20,13 @@ Min T : +14
    2   2   2   3   3   4   4   3
    0   0   0   0   0 0.2 1.2 3.5
 https://www.gismeteo.com/weather-timisoara-3370/4-day/
+
+```
+
+
+![image](https://github.com/DanMelinte/WeatherApp/assets/44269060/8259d45a-a47f-4853-8336-56e1cf08250e)
+
+```java
 
 Insert date : 26
 Insert month : 6
