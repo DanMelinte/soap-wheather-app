@@ -226,5 +226,9 @@ public class Main {
         List<String> precList = prec.stream().map(Element::text).collect(Collectors.toList());
 
         return new InfoDay(day.getDate(), day.MaxTemp, day.MinTemp, day.link, hoursList, tempList, windList, precList);
+=======
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello world!");
     }
 }
