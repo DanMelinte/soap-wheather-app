@@ -20,4 +20,10 @@ Min T : +15
    0   0   0   2   5 3.3 5.5 7.2
 https://www.gismeteo.com/weather-timisoara-3370/4-day/
 
+Insert date : 26
+Insert month : 6
+Date  : 2023-06-26
+Max T : +27
+Min T : +17
+Only these information are avaible for current time
 ```
