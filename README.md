@@ -1,7 +1,7 @@
 # WeatherApp
 Java weather application that demonstrates the implementation of SOAP
 
-Retrieve data from the website https://www.gismeteo.com/weather-timisoara-3370/month/ and potentially display additional information for the first ten days.
+Retrieve data from the website https://www.gismeteo.com/weather-timisoara-3370/month/ and potentially display [additional] information for the first ten days.
 
 
 ```java
