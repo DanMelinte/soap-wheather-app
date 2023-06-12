@@ -11,153 +11,95 @@ import java.lang.annotation.Documented;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Month;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-class Days {
-    int date;
-    String month;
-    String link;
-
-    public Days(int date, String month, String link) {
-        this.date = date;
-        this.month = month;
-        this.link = link;
-    }
-
-    public Days(int date, String month) {
-        this.date = date;
-        this.month = month;
-
-        this.link = null;
-    }
-
-    public int getDate() {
-        return date;
-    }
-
-    public void setDate(int date) {
-        this.date = date;
-    }
-
-    public String getMonth() {
-        return month;
-    }
-
-    public void setMonth(String month) {
-        this.month = month;
-    }
-
-    public String getLink() {
-        return link;
-    }
-
-    public void setLink(String link) {
-        this.link = link;
-    }
-
-    @Override
-    public String toString() {
-        return "Days{" +
-                "date=" + date +
-                ", month='" + month + '\'' +
-                ", link='" + link + '\'' +
-                '}';
-    }
-}
-
-class InfoDay {
-    private String date;
-    private List<String> hours = new ArrayList<>(8);
-    private List<String> temp = new ArrayList<>(8);
-    private List<String> wind = new ArrayList<>(8);
-
-    public String getDate() {
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
-    }
-
-    public List<String> getHours() {
-        return hours;
-    }
-
-    public void setHours(List<String> hours) {
-        this.hours = hours;
-    }
-
-    public List<String> getTemp() {
-        return temp;
-    }
-
-    public void setTemp(List<String> temp) {
-        this.temp = temp;
-    }
-
-    public List<String> getWind() {
-        return wind;
-    }
-
-    public void setWind(List<String> wind) {
-        this.wind = wind;
-    }
-
-    public InfoDay(String date, List<String> hours, List<String> temp, List<String> wind) {
-        this.date = date;
-        this.hours = hours;
-        this.temp = temp;
-        this.wind = wind;
-    }
-
-    @Override
-    public String toString() {
-        return "InfoDay{" + "date='" + date + '\'' + ", hours=" + hours + ", temp=" + temp + ", wind=" + wind + '}';
-    }
-}
-
 public class Main {
-
     public static String website = "https://www.gismeteo.com";
 
     private static Document getMonthPage() throws IOException {
         Document page = Jsoup.parse(new URL(website + "/weather-timisoara-3370/month/"), 3000);
         return page;
     }
-    private static Document getDayPage() throws IOException {
-        String url = "https://www.gismeteo.com/weather-timisoara-3370/";
-        Document page = Jsoup.parse(new URL(url), 3000);
-        return page;
+
+    private static Document getDayPage(String dayLink) throws IOException {
+        return Jsoup.parse(new URL(dayLink), 50000);
+    }
+    public static void InitilizeCalendar(List<Day> DayList) throws IOException {
+        Elements DayInfo = getMonthPage()
+                .select("div[class=widget-body]")
+                .select("a[class=row-item]");
+        StringBuilder m = new StringBuilder();
+
+        for (Element e : DayInfo) {
+            //Extract [0] - date(obligatory), [1] - month(Optional)
+            String[] date = e.select("div[class~=date item-day-\\d+]").text().split(" ");
+
+            //Checks if the month exists; if not, add it like before one. If the month exists, update it.
+            if (date.length == 2) m = new StringBuilder(date[1]);
+
+            //Extract min and max Temperature for each day
+            String maxTemp = e.select("div[class=temp]").select("div[class=maxt]").select("span[class=unit unit_temperature_c]").text();
+            String minTemp = e.select("div[class=temp]").select("div[class=mint]").select("span[class=unit unit_temperature_c]").text();
+
+            int day = Integer.parseInt(date[0]);
+            int month = convertToAbbreviation(m.toString().toUpperCase().trim());
+            LocalDate data = LocalDate.of(LocalDate.now().getYear(), month, day);
+
+            //If the "href" attribute is present, extract and add them to an object.
+            // If the link exists, it is likely to provide detailed information about the watch.
+            Element l = e.selectFirst("a.row-item[href]");
+            String link = null;
+            if (l != null) {
+                link = l.attr("href").toString();
+                DayList.add(new Day(data, maxTemp, minTemp, website + link)); //If link exist
+            } else
+                DayList.add(new Day(data, maxTemp, minTemp)); //If the link does not exist
+        }
     }
 
+    private static List<Day> DayList = new ArrayList<>(); // main collection with Calendar Data
+
     public static void main(String[] args) throws Exception {
-        List<Days> daysList = new ArrayList<>();
-        InitilizeCalendar(daysList);
-        daysList.stream().forEach(System.out::println);
+        InitilizeCalendar(DayList);
+        //DayList.stream().forEach(System.out::println);
 
         menu();
     }
 
-    public static void menu() {
-
+    public static void menu() throws IOException {
+        Scanner scan = new Scanner(System.in);
         String opt = null;
-        while(true) {
+        while (true) {
             System.out.println("1. Watch temperature in a specific day : ");
-            System.out.println("2. Watch detailed information about days (max 10 days in future)");
             System.out.println("0. Exit");
 
+            System.out.print("Select Option : ");
+            opt = scan.nextLine();
+
             switch (opt) {
-                case "1" :
+                case "1":
+                    int ok;
+                    int a;
+                    do {
+                        ok = 1;
+                        System.out.print("Insert date : ");
+                        a = Integer.parseInt(scan.nextLine());
+                        if (a < 1 || a > 31) ok = 0;
+                    } while (ok == 0);
+
+                    System.out.print("Insert month : ");
+                    String b = scan.nextLine().toUpperCase().trim();
+                    int month = convertToAbbreviation(b);
+
+                    LocalDate data = LocalDate.of(LocalDate.now().getYear(), month, a);
+                    OnlyTemperature(data);
                     break;
-                case "2" :
-                    break;
-                case "0" :
+
+                case "0":
                     break;
                 default:
                     System.out.println("Inexistent Option - Try Another One ?");
@@ -166,71 +108,123 @@ public class Main {
         }
     }
 
-    public static void InitilizeCalendar(List<Days> data) throws IOException {
-        Elements daysInfo = getMonthPage().select("div[class=widget-body]").select("a[class=row-item]");
-        StringBuilder m = new StringBuilder();
-
-        for (Element e : daysInfo) {
-            //Extract [0] - date(obligatory), [1] - month(Optional)
-            String[] date = e.select("div[class~=date item-day-\\d+]").text().split(" ");
-
-            //Checks if the month exists; if not, add it like before one. If the month exists, update it.
-            if (date.length == 2)
-                m = new StringBuilder(date[1]);
-
-            //If the "href" attribute is present, extract and add them to an object.
-            // If the link exists, it is likely to provide detailed information about the watch.
-            Element l = e.selectFirst("a.row-item[href]");
-            String link = null;
-            if (l != null) {
-                link = l.attr("href").toString();
-                data.add(new Days(Integer.parseInt(date[0]), m.toString(), website + link)); //If link exist
-            } else
-                data.add(new Days(Integer.parseInt(date[0]), m.toString())); //If the link does not exist
+    public static int convertToAbbreviation(String input) {
+        switch (input.toUpperCase()) {
+            case "JAN":
+            case "JANUARY":
+            case "1":
+                return 1;
+            case "FEB":
+            case "FEBRUARY":
+            case "2":
+                return 2;
+            case "MAR":
+            case "MARCH":
+            case "3":
+                return 3;
+            case "APR":
+            case "APRIL":
+            case "4":
+                return 4;
+            case "MAY":
+            case "5":
+                return 5;
+            case "JUN":
+            case "JUNE":
+            case "6":
+                return 6;
+            case "JUL":
+            case "JULY":
+            case "7":
+                return 7;
+            case "AUG":
+            case "AUGUST":
+            case "8":
+                return 8;
+            case "SEP":
+            case "SEPTEMBER":
+            case "9":
+                return 9;
+            case "OCT":
+            case "OCTOBER":
+            case "10":
+                return 10;
+            case "NOV":
+            case "NOVEMBER":
+            case "11":
+                return 11;
+            case "DEC":
+            case "DECEMBER":
+            case "12":
+                return 12;
+            default:
+                return 0;
         }
     }
 
-    public InfoDay CollectDayInfo() throws IOException {
-        Element tableInfo = getDayPage().select("div[class=widget widget-weather-parameters widget-oneday]").first();
+    public static void OnlyTemperature(LocalDate date) throws IOException {
+        Day day = DayList.stream()
+                .filter(a -> a.getDate().equals(date))
+                .findFirst()
+                .orElse(null);
 
-        Element date = tableInfo.select("span[class=item item-day-1]").first();
-        //System.out.println("Date : " + date.text());
+        if (day != null && day.getLink() != null) {
+            InfoDay SpecificDay = DayInfo(day);
 
-        //System.out.println("Hours : ");
+            System.out.println("Date  : " + SpecificDay.getDate());
+            System.out.println("Max T : " + SpecificDay.getMaxTemp());
+            System.out.println("Min T : " + SpecificDay.getMinTemp());
+
+            SpecificDay.getHours().forEach(a -> System.out.printf("%4s", a));
+            System.out.println();
+            SpecificDay.getTemp().forEach(a -> System.out.printf("%4s", a));
+            System.out.println();
+            SpecificDay.getWind().forEach(a -> System.out.printf("%4s", a));
+            System.out.println();
+            SpecificDay.getPrec().forEach(a -> System.out.printf("%4s", a));
+            System.out.println();
+
+            System.out.println(SpecificDay.getLink());
+
+        } else if (day != null){
+            System.out.println("Date  : " + day.getDate());
+            System.out.println("Max T : " + day.getMaxTemp());
+            System.out.println("Min T : " + day.getMinTemp());
+            System.out.println("Only these information are avaible for current time");
+        } else
+            System.out.println("There are no information");
+    }
+
+    public static InfoDay DayInfo(Day day) throws IOException {
+        Element tableInfo = getDayPage(day.getLink()).select("div[class=widget widget-weather-parameters widget-oneday]").first();
+
+        //Hours
         Elements hours = tableInfo.select("div[class=widget-row widget-row-time]").select("span");
-        List<String> h = new ArrayList<>();
+        List<String> hoursList = new ArrayList<>();
         for (Element e : hours) {
             String b = e.text();
             b = b.substring(0, b.length() - 2);
-            h.add(b);
+            hoursList.add(b);
         }
-        //h.forEach(System.out::println);
 
-        //System.out.println("Temperature : ");
+        //Temperature
         Elements temp = tableInfo.select("div[class=values]").select("span[class=unit unit_temperature_c]");
-        List<String> t = new ArrayList<>();
+        List<String> tempList = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
-            t.add(temp.get(i).ownText());
+            tempList.add(temp.get(i).ownText());
         }
-        //t.forEach(System.out::println);
 
-        //System.out.println("Wind m/s : ");
+        //Wind
         Elements wind = tableInfo.select("div[class=widget-row widget-row-wind-gust row-with-caption]").select("div[class=row-item]");
         wind = wind.select("span");
         wind.removeIf(a -> a.hasClass("unit_wind_km_h"));
-        List<String> w = wind.stream().map(Element::text).collect(Collectors.toList());
+        List<String> windList = wind.stream().map(Element::text).collect(Collectors.toList());
 
-        InfoDay now = new InfoDay(date.text(), h, t, w);
-        System.out.println(now);
+        //Precipitations
+        Elements prec = tableInfo.select("div[class=widget-row widget-row-precipitation-bars row-with-caption]")
+                .select("div[class=row-item]");
+        List<String> precList = prec.stream().map(Element::text).collect(Collectors.toList());
 
-
-        Elements days = getDayPage().select("div[class=weathertabs day-1]");
-        System.out.println(days);
-
-        for (Element e : days) {
-            if (e.hasAttr("a")) System.out.println("sad");
-        }
-
-        return new InfoDay(date.text(), h, t, w);
+        return new InfoDay(day.getDate(), day.MaxTemp, day.MinTemp, day.link, hoursList, tempList, windList, precList);
     }
 }
